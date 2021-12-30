@@ -9,13 +9,14 @@ contract Token {
     // variables
     string public name = "Avokado";
     string public symbol = "AVK";
-    address public owner;
+    address owner;
     uint public totalSupply = 1000000;
+    uint tokenCirculating = 0;
     mapping(address => uint) balances;
     mapping(address => bool) enrolled;
     uint256 tokenPrice = 9 wei;
     address[] addresses;
-    uint public members = 0;
+    uint members = 0;
 
 
     // events
@@ -26,6 +27,7 @@ contract Token {
 
     constructor() {
         owner = msg.sender;
+        enrolled[owner] = true;
     }
 
     function join() public returns (string memory){
@@ -40,14 +42,18 @@ contract Token {
         }
     }
     function buyToken(uint256 amount) public payable returns (bool) {
+        require(enrolled[msg.sender] == true);
+        require(tokenCirculating + amount <= totalSupply);
         uint256 price = amount.mul(tokenPrice);
         require(msg.value == price, "Wrong price amount inputted");
         balances[msg.sender] += amount;
+        tokenCirculating += amount;
         emit Purchase(msg.sender, amount);
         return true;
     }
 
     function transfer(address recipient, uint256 amount) public payable returns (bool) {
+        require(enrolled[msg.sender] == true);
         require (balances[msg.sender] >= amount, "Not Enough Tokens!");
         balances[msg.sender] -= amount;
         balances[recipient] += amount;
@@ -57,6 +63,7 @@ contract Token {
 
     function sellToken(uint256 amount) public payable returns (bool) {
         require (balances[msg.sender] >= amount, "Not Enough Tokens!");
+        require(enrolled[msg.sender] == true);
         require (totalSupply >= amount);
         balances[msg.sender] -= amount;
         totalSupply -= amount;
